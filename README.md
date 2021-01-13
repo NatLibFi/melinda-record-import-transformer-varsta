@@ -1,6 +1,6 @@
-# ONIX record transformer for the Melinda record batch import system
+# ONIX record transformer for varsta to the Melinda record batch import system
 
-ONIX record transformer for the Melinda record batch import system. Consumes records in ONIX for Books version 3 format.
+ONIX record transformer for varsta to the Melinda record batch import system. Consumes records in ONIX for Books version 3 format.
 
 ## License and copyright
 
