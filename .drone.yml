@@ -1,0 +1,97 @@
+---
+kind: pipeline
+type: docker
+name: Default
+
+trigger:
+  event:
+    - push
+
+steps:
+
+  - name: audit
+    image: node:12
+    environment:
+      NPM_CONFIG_IGNORE_SCRIPTS: true
+    commands:
+      - npm audit --package-lock-only --production --audit-level=moderate
+
+  - name: install
+    image: node:12
+    environment:
+      NPM_CONFIG_IGNORE_SCRIPTS: true
+    commands:
+      - npm ci
+
+  - name: test
+    image: node:12
+    commands:
+      - npm test
+
+  #- name: check-coverage
+  #  image: node:12
+  #  commands:
+  #    - npm run check-coverage
+
+  - name: build
+    image: node:12
+    commands:
+      - npm run build
+      - npm ci --production
+
+  - name: static-security-scan
+    image: quay.io/natlibfi/nodejsscan
+    commands:
+      - python /usr/src/app/cli.py -d dist
+
+  - name: docker
+    image: plugins/docker
+    settings:
+      repo: quay.io/natlibfi/melinda-record-import-transformer-varsta
+      registry: quay.io
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+---
+kind: pipeline
+type: docker
+name: Update dependencies
+
+trigger:
+  event:
+    - custom
+  branch:
+    - next
+
+steps:
+
+  - name: update-deps
+    image: node:12
+    commands:
+      - npm install --package-lock-only
+
+  - name: commit-and-push
+    image: quay.io/natlibfi/drone-plugin-git-push
+    settings:
+      remote: ${DRONE_GIT_SSH_URL}
+      branch: next
+      commit: true
+      commit_message: 'Update dependencies'
+      author_name: natlibfi-melinda-automation
+      author_email: 65649125+natlibfi-melinda-automation@users.noreply.github.com
+      ssh_key:
+        from_secret: github_deploy_key
+---
+kind: secret
+name: docker_username
+data: l7pJA2TXwhpyad8EBkU0C2H1FiBmTU8r35vvRbLGMeX4YIFrwT52zqeZJgXtylzIijg=
+---
+kind: secret
+name: docker_password
+data: 1S7F5ZT962NtT9h1uLTClG+cxNJ3FdPt1RKUWawhT/yP+7s4iRJfKQ8eQQ89i8WMISez+TQMIW0J5cSpteTqKvb7E3MOebq07W+vgi3wibFPoA/QTu63QSJF8MY=
+---
+kind: signature
+hmac: c8fe6a87743c36cf531293b4a3221b741133e6a190128731cf8194ab0d866aba
+
+...
